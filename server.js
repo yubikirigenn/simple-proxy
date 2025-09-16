@@ -1,6 +1,6 @@
 import express from 'express';
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';   // ← ここを修正！
 import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,7 +16,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// シンプルな HTML/JS プロキシ
 app.post('/fetch', async (req, res) => {
   try {
     const { url } = req.body;
@@ -29,7 +28,7 @@ app.post('/fetch', async (req, res) => {
       const html = response.data.toString('utf-8');
       const $ = cheerio.load(html);
 
-      // 例: <title> を書き換える
+      // タイトルを書き換える
       $('title').text('yubikiri-proxy - ' + $('title').text());
 
       res.send($.html());

@@ -1,46 +1,44 @@
 import express from 'express';
 import fetch from 'node-fetch';
-import { load } from 'cheerio';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-app.use(express.static('public')); // index.html置き場
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// プロキシ
+// 静的ファイルを返す（index.htmlなど）
+app.use(express.static(path.join(__dirname)));
+
+// ルートにアクセスされたときに簡単なHTMLフォームを返す
+app.get('/', (req, res) => {
+  res.send(`
+    <html>
+      <head><title>Simple Proxy</title></head>
+      <body>
+        <h2>URLを入力してください</h2>
+        <form method="GET" action="/proxy">
+          <input name="url" type="text" placeholder="https://example.com" size="50"/>
+          <button type="submit">アクセス</button>
+        </form>
+      </body>
+    </html>
+  `);
+});
+
+// 簡易プロキシ機能
 app.get('/proxy', async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.status(400).send('URL required');
+  const targetUrl = req.query.url;
+  if (!targetUrl) return res.send('URLを入力してください');
 
   try {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' } // 簡易制限回避
-    });
-    let body = await response.text();
-
-    // HTML書き換え
-    const $ = load(body);
-
-    // リンク書き換え
-    $('a').each((i, el) => {
-      const href = $(el).attr('href');
-      if (href && href.startsWith('http')) {
-        $(el).attr('href', `/proxy?url=${encodeURIComponent(href)}`);
-      }
-    });
-
-    // JS差し替え（例）
-    $('script[src]').each((i, el) => {
-      const src = $(el).attr('src');
-      if (src && src.includes('example.js')) {
-        $(el).attr('src', '/my-custom.js');
-      }
-    });
-
-    res.send($.html());
+    const response = await fetch(targetUrl);
+    const text = await response.text();
+    res.send(text);
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error fetching URL');
+    res.send('エラー: ' + err.message);
   }
 });
 

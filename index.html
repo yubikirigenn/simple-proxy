@@ -1,14 +1,26 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Simple Proxy</title>
+<meta charset="UTF-8">
+<title>Simple Proxy</title>
+<style>
+body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+input[type="text"] { width: 60%; padding: 10px; font-size: 16px; }
+button { padding: 10px 20px; font-size: 16px; }
+</style>
 </head>
 <body>
-  <h1>Simple Proxy</h1>
-  <form action="/proxy" method="get">
-    <input type="text" name="url" placeholder="https://example.com" size="50">
-    <button type="submit">Go</button>
-  </form>
+<h1>Simple Proxy</h1>
+<input id="urlInput" type="text" placeholder="https://example.com">
+<button onclick="goProxy()">Go</button>
+
+<script>
+function goProxy() {
+  const url = document.getElementById('urlInput').value;
+  if(url) {
+    window.location.href = `/proxy?url=${encodeURIComponent(url)}`;
+  }
+}
+</script>
 </body>
 </html>

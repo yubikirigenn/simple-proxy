@@ -1,45 +1,89 @@
 import express from 'express';
 import fetch from 'node-fetch';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import cheerio from 'cheerio';
+import { URL } from 'url';
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// 静的ファイル配信（UI用）
+app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }));
 
-// 静的ファイルを返す（index.htmlなど）
-app.use(express.static(path.join(__dirname)));
+// URLエンコード済みのリソースもプロキシ
+function makeProxyURL(originalURL) {
+  return `/proxy?url=${encodeURIComponent(originalURL)}`;
+}
 
-// ルートにアクセスされたときに簡単なHTMLフォームを返す
-app.get('/', (req, res) => {
-  res.send(`
-    <html>
-      <head><title>Simple Proxy</title></head>
-      <body>
-        <h2>URLを入力してください</h2>
-        <form method="GET" action="/proxy">
-          <input name="url" type="text" placeholder="https://example.com" size="50"/>
-          <button type="submit">アクセス</button>
-        </form>
-      </body>
-    </html>
-  `);
-});
-
-// 簡易プロキシ機能
+// メインプロキシ
 app.get('/proxy', async (req, res) => {
-  const targetUrl = req.query.url;
-  if (!targetUrl) return res.send('URLを入力してください');
+  const target = req.query.url;
+  if (!target) return res.send("URLを指定してください。例: /proxy?url=https://example.com");
 
   try {
-    const response = await fetch(targetUrl);
-    const text = await response.text();
-    res.send(text);
-  } catch (err) {
-    res.send('エラー: ' + err.message);
+    const response = await fetch(target);
+    const contentType = response.headers.get('content-type');
+
+    if (contentType && contentType.includes('text/html')) {
+      // HTMLの場合
+      const html = await response.text();
+      const $ = cheerio.load(html);
+
+      // aタグの書き換え
+      $('a').each((i, el) => {
+        const href = $(el).attr('href');
+        if (href && !href.startsWith('#')) {
+          try {
+            const absUrl = new URL(href, target).href;
+            $(el).attr('href', makeProxyURL(absUrl));
+          } catch {}
+        }
+      });
+
+      // リソース書き換え (画像, script, link)
+      $('img').each((i, el) => {
+        const src = $(el).attr('src');
+        if (src) {
+          try {
+            const absUrl = new URL(src, target).href;
+            $(el).attr('src', makeProxyURL(absUrl));
+          } catch {}
+        }
+      });
+
+      $('script').each((i, el) => {
+        const src = $(el).attr('src');
+        if (src) {
+          try {
+            const absUrl = new URL(src, target).href;
+            $(el).attr('src', makeProxyURL(absUrl));
+          } catch {}
+        }
+      });
+
+      $('link[rel="stylesheet"]').each((i, el) => {
+        const href = $(el).attr('href');
+        if (href) {
+          try {
+            const absUrl = new URL(href, target).href;
+            $(el).attr('href', makeProxyURL(absUrl));
+          } catch {}
+        }
+      });
+
+      res.send($.html());
+    } else {
+      // HTML以外はバイナリとして返す
+      const buffer = await response.arrayBuffer();
+      res.set('Content-Type', contentType || 'application/octet-stream');
+      res.send(Buffer.from(buffer));
+    }
+  } catch (e) {
+    res.send("アクセスできません: " + e.message);
   }
 });
 
-app.listen(PORT, () => console.log(`Proxy server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Proxy server running on port ${PORT}`);
+});
+

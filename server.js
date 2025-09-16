@@ -1,6 +1,6 @@
 import express from 'express';
 import fetch from 'node-fetch';
-import cheerio from 'cheerio';
+import { load } from 'cheerio';
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -26,7 +26,7 @@ app.get('/proxy', async (req, res) => {
     let body = await response.text();
 
     // HTML 書き換え
-    const $ = cheerio.load(body);
+    const $ = load(body);
 
     // すべてのリンクを書き換え
     $('a').each((i, el) => {

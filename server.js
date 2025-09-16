@@ -1,75 +1,63 @@
-import express from "express";
-import fetch from "node-fetch";
-import * as cheerio from "cheerio"; // cheerio の default ではなく名前付きインポート
-import compression from "compression";
-import path from "path";
-import { fileURLToPath } from "url";
+import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import axios from 'axios';
+import cheerio from 'cheerio';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
-const PORT = process.env.PORT || 10000;
-
-// __dirname を ES モジュールで使えるように
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ミドルウェア
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(compression());
-app.use(express.static(path.join(__dirname, "public"))); // public フォルダに index.html 等を置く
+const PORT = process.env.PORT || 10000;
 
-// CroxyProxy 風フォームページ
-app.get("/", (req, res) => {
-  res.send(`
-    <html>
-      <head>
-        <title>Simple Proxy</title>
-        <style>
-          body { font-family: Arial; margin: 50px; text-align: center; }
-          input { width: 60%; padding: 10px; }
-          button { padding: 10px 20px; }
-        </style>
-      </head>
-      <body>
-        <h1>Simple Proxy</h1>
-        <form method="POST" action="/proxy">
-          <input name="url" placeholder="Enter URL" required />
-          <button type="submit">Go</button>
-        </form>
-      </body>
-    </html>
-  `);
-});
+// 静的ファイル
+app.use(express.static(path.join(__dirname, 'public')));
 
-// プロキシ処理
-app.post("/proxy", async (req, res) => {
-  try {
-    const targetUrl = req.body.url;
-    if (!targetUrl) return res.status(400).send("URL required");
-
-    const response = await fetch(targetUrl);
-    const contentType = response.headers.get("content-type");
-
-    let body = await response.text();
-
-    // HTML なら書き換え
-    if (contentType && contentType.includes("text/html")) {
-      const $ = cheerio.load(body);
-
-      // 例: body の最後に一文追加
-      $("body").append(`<p style="color:red;">-- Proxy Modified by SimpleProxy --</p>`);
-
-      body = $.html();
+// プロキシ対象
+app.get('/proxy/*', async (req, res) => {
+    const targetUrl = req.url.replace(/^\/proxy\//, '');
+    if (!/^https?:\/\//.test(targetUrl)) {
+        res.status(400).send('Invalid URL');
+        return;
     }
 
-    res.set("Content-Type", contentType);
-    res.send(body);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Proxy Error");
-  }
+    try {
+        const response = await axios.get(targetUrl, { responseType: 'arraybuffer' });
+        const contentType = response.headers['content-type'] || '';
+
+        if (contentType.includes('text/html')) {
+            // HTML書き換え
+            const html = response.data.toString('utf8');
+            const $ = cheerio.load(html);
+
+            // リンク書き換え
+            $('a, link, script, img, iframe').each((i, el) => {
+                const attr = el.name === 'script' || el.name === 'img' || el.name === 'iframe' ? 'src' : 'href';
+                const val = $(el).attr(attr);
+                if (val && !val.startsWith('http') && !val.startsWith('data:')) {
+                    $(el).attr(attr, new URL(val, targetUrl).href.replace(/^/, '/proxy/'));
+                } else if (val && val.startsWith('http')) {
+                    $(el).attr(attr, '/proxy/' + val);
+                }
+            });
+
+            res.send($.html());
+        } else {
+            // HTML以外はそのまま返す
+            res.set('Content-Type', contentType);
+            res.send(response.data);
+        }
+    } catch (err) {
+        res.status(500).send('Error fetching target: ' + err.message);
+    }
+});
+
+// その他は index.html を返す
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`Proxy server running on port ${PORT}`);
+    console.log(`yubikiri-proxy running on port ${PORT}`);
 });

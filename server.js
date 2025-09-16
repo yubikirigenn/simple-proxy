@@ -1,7 +1,6 @@
 import express from 'express';
 import fetch from 'node-fetch';
-import cheerio from 'cheerio';
-import compression from 'compression';
+import * as cheerio from 'cheerio';
 
 const app = express();
 const PORT = process.env.PORT || 10000;

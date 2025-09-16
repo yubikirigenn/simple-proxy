@@ -1,19 +1,20 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>yubikiri-proxy</title> <!-- タブの名前 -->
+  <title>yubikiri-proxy</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f0f2f5;
+      background: #f7f9fc;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
-      margin: 0;
     }
     h1 {
       color: #333;
@@ -24,47 +25,31 @@
       gap: 10px;
     }
     input[type="text"] {
-      width: 400px;
       padding: 10px;
-      border-radius: 5px;
+      font-size: 1em;
       border: 1px solid #ccc;
-      font-size: 16px;
+      border-radius: 8px;
+      width: 300px;
     }
     button {
       padding: 10px 20px;
-      border-radius: 5px;
+      font-size: 1em;
       border: none;
-      background-color: #007bff;
+      border-radius: 8px;
+      background-color: #0078d7;
       color: white;
-      font-size: 16px;
       cursor: pointer;
     }
     button:hover {
-      background-color: #0056b3;
+      background-color: #005fa3;
     }
   </style>
 </head>
 <body>
   <h1>yubikiri-proxy</h1>
-  <form id="proxyForm">
-    <input type="text" id="urlInput" name="url" placeholder="https://example.com" required>
+  <form action="/proxy" method="get">
+    <input type="text" name="url" placeholder="Enter URL">
     <button type="submit">Go</button>
   </form>
-
-  <script>
-    const form = document.getElementById('proxyForm');
-    const input = document.getElementById('urlInput');
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const targetUrl = input.value.trim();
-      if (!targetUrl) return;
-      
-      // yubikiri-proxy のバックエンドにアクセスするURL
-      // Node側では /fetch?url= に変換してリクエストをプロキシする想定
-      const proxyUrl = `/fetch?url=${encodeURIComponent(targetUrl)}`;
-      window.location.href = proxyUrl;
-    });
-  </script>
 </body>
 </html>

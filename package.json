@@ -1,5 +1,5 @@
 {
-  "name": "yubikirigenman-proxy",
+  "name": "yubikiri-proxy",
   "version": "1.0.0",
   "type": "module",
   "main": "server.js",
@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "node-fetch": "^3.3.2",
+    "http-proxy-middleware": "^2.0.6",
     "cheerio": "^1.0.0-rc.12",
-    "compression": "^1.7.4"
+    "axios": "^1.6.6"
   }
 }

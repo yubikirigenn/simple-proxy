@@ -5,16 +5,7 @@ import { load } from 'cheerio';
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// 自作 JS の例
-app.get('/my-custom.js', (req, res) => {
-  res.type('text/javascript');
-  res.send(`console.log("This JS is injected by proxy");`);
-});
-
-// ホームページ
-app.get('/', (req, res) => {
-  res.sendFile('index.html', { root: '.' });
-});
+app.use(express.static('public')); // index.html置き場
 
 // プロキシ
 app.get('/proxy', async (req, res) => {
@@ -22,13 +13,15 @@ app.get('/proxy', async (req, res) => {
   if (!url) return res.status(400).send('URL required');
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' } // 簡易制限回避
+    });
     let body = await response.text();
 
-    // HTML 書き換え
+    // HTML書き換え
     const $ = load(body);
 
-    // すべてのリンクを書き換え
+    // リンク書き換え
     $('a').each((i, el) => {
       const href = $(el).attr('href');
       if (href && href.startsWith('http')) {
@@ -36,16 +29,17 @@ app.get('/proxy', async (req, res) => {
       }
     });
 
-    // スクリプト差し替え例
+    // JS差し替え（例）
     $('script[src]').each((i, el) => {
       const src = $(el).attr('src');
-      if (src.includes('example.js')) {
+      if (src && src.includes('example.js')) {
         $(el).attr('src', '/my-custom.js');
       }
     });
 
     res.send($.html());
   } catch (err) {
+    console.error(err);
     res.status(500).send('Error fetching URL');
   }
 });

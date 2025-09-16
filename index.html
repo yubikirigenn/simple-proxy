@@ -1,26 +1,70 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>Simple Proxy</title>
-<style>
-body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-input[type="text"] { width: 60%; padding: 10px; font-size: 16px; }
-button { padding: 10px 20px; font-size: 16px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>yubikiri-proxy</title> <!-- タブの名前 -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    form {
+      display: flex;
+      gap: 10px;
+    }
+    input[type="text"] {
+      width: 400px;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      border-radius: 5px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
-<h1>Simple Proxy</h1>
-<input id="urlInput" type="text" placeholder="https://example.com">
-<button onclick="goProxy()">Go</button>
+  <h1>yubikiri-proxy</h1>
+  <form id="proxyForm">
+    <input type="text" id="urlInput" name="url" placeholder="https://example.com" required>
+    <button type="submit">Go</button>
+  </form>
 
-<script>
-function goProxy() {
-  const url = document.getElementById('urlInput').value;
-  if(url) {
-    window.location.href = `/proxy?url=${encodeURIComponent(url)}`;
-  }
-}
-</script>
+  <script>
+    const form = document.getElementById('proxyForm');
+    const input = document.getElementById('urlInput');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const targetUrl = input.value.trim();
+      if (!targetUrl) return;
+      
+      // yubikiri-proxy のバックエンドにアクセスするURL
+      // Node側では /fetch?url= に変換してリクエストをプロキシする想定
+      const proxyUrl = `/fetch?url=${encodeURIComponent(targetUrl)}`;
+      window.location.href = proxyUrl;
+    });
+  </script>
 </body>
 </html>

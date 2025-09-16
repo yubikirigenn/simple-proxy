@@ -1,58 +1,34 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>yubikiri-proxy</title>
-  <style>
-    body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; background: #f4f4f4; }
-    header { width: 100%; padding: 1em; background: #007acc; color: white; text-align: center; font-size: 1.5em; }
-    main { padding: 2em; width: 100%; max-width: 600px; text-align: center; }
-    input { width: 80%; padding: 0.5em; font-size: 1em; margin-right: 0.5em; }
-    button { padding: 0.5em 1em; font-size: 1em; }
-    iframe { width: 100%; height: 80vh; margin-top: 1em; border: 1px solid #ccc; }
-  </style>
+    <meta charset="UTF-8">
+    <title>yubikiri-proxy</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        input { width: 300px; padding: 10px; }
+        button { padding: 10px 20px; }
+        iframe { width: 90%; height: 80vh; margin-top: 20px; border: 1px solid #ccc; }
+    </style>
 </head>
 <body>
-  <header>yubikiri-proxy</header>
-  <main>
-    <input id="urlInput" type="text" placeholder="アクセスしたいURLを入力">
-    <button id="goButton">GO</button>
-    <iframe id="proxyFrame" src=""></iframe>
-  </main>
+    <h1>yubikiri-proxy</h1>
+    <input type="text" id="urlInput" placeholder="https://example.com">
+    <button id="goBtn">GO</button>
+    <iframe id="frame" src=""></iframe>
 
-  <script>
-    const input = document.getElementById('urlInput');
-    const button = document.getElementById('goButton');
-    const frame = document.getElementById('proxyFrame');
+    <script>
+        const input = document.getElementById('urlInput');
+        const btn = document.getElementById('goBtn');
+        const frame = document.getElementById('frame');
 
-    // クエリパラメータから初期URLを取得
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('url')) {
-      input.value = decodeURIComponent(params.get('url'));
-      frame.src = '/proxy/' + encodeURIComponent(params.get('url'));
-    }
+        function go() {
+            const url = input.value.trim();
+            if (!url) return;
+            frame.src = '/proxy/' + url;
+        }
 
-    function go() {
-      let url = input.value.trim();
-      if (!url) return;
-      if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
-
-      // iframeにプロキシURLを設定
-      frame.src = '/proxy/' + encodeURIComponent(url);
-
-      // クエリパラメータ更新（ページリロードしても保持）
-      const newUrl = `${window.location.pathname}?url=${encodeURIComponent(url)}`;
-      window.history.replaceState({}, '', newUrl);
-    }
-
-    // ボタンでGO
-    button.addEventListener('click', go);
-
-    // EnterでもGO
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') go();
-    });
-  </script>
+        btn.addEventListener('click', go);
+        input.addEventListener('keypress', e => { if (e.key === 'Enter') go(); });
+    </script>
 </body>
 </html>

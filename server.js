@@ -1,8 +1,18 @@
 import express from "express";
 import fetch from "node-fetch";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 
+// __dirname を作る
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 静的ファイルを配信
+app.use(express.static(__dirname));
+
+// 既存のプロキシ機能
 app.get("/proxy", async (req, res) => {
   const targetUrl = req.query.url;
   if (!targetUrl) {

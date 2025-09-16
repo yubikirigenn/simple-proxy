@@ -1,64 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>yubikiri-proxy</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f9fc;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-    h1 {
-      color: #333;
-      margin-bottom: 20px;
-    }
-    form {
-      display: flex;
-      gap: 10px;
-    }
-    input[type="text"] {
-      padding: 10px;
-      font-size: 1em;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      width: 300px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 1em;
-      border: none;
-      border-radius: 8px;
-      background-color: #0078d7;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #005fa3;
-    }
+    body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; background: #f4f4f4; }
+    header { width: 100%; padding: 1em; background: #007acc; color: white; text-align: center; font-size: 1.5em; }
+    main { padding: 2em; width: 100%; max-width: 600px; text-align: center; }
+    input { width: 80%; padding: 0.5em; font-size: 1em; margin-right: 0.5em; }
+    button { padding: 0.5em 1em; font-size: 1em; }
+    iframe { width: 100%; height: 80vh; margin-top: 1em; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
-  <h1>yubikiri-proxy</h1>
-  <form id="proxyForm" action="/proxy" method="get">
-    <input id="urlInput" type="text" name="url" placeholder="Enter URL" required>
-    <button type="submit">Go</button>
-  </form>
+  <header>yubikiri-proxy</header>
+  <main>
+    <input id="urlInput" type="text" placeholder="アクセスしたいURLを入力">
+    <button id="goButton">GO</button>
+    <iframe id="proxyFrame" src=""></iframe>
+  </main>
 
   <script>
-    // Enterキーで送信できるようにする
-    document.getElementById("urlInput").addEventListener("keydown", function(event) {
-      if (event.key === "Enter") {
-        event.preventDefault(); // デフォルトの挙動を止める
-        document.getElementById("proxyForm").submit(); // 強制送信
-      }
+    const input = document.getElementById('urlInput');
+    const button = document.getElementById('goButton');
+    const frame = document.getElementById('proxyFrame');
+
+    // クエリパラメータから初期URLを取得
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('url')) {
+      input.value = decodeURIComponent(params.get('url'));
+      frame.src = '/proxy/' + encodeURIComponent(params.get('url'));
+    }
+
+    function go() {
+      let url = input.value.trim();
+      if (!url) return;
+      if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
+
+      // iframeにプロキシURLを設定
+      frame.src = '/proxy/' + encodeURIComponent(url);
+
+      // クエリパラメータ更新（ページリロードしても保持）
+      const newUrl = `${window.location.pathname}?url=${encodeURIComponent(url)}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    // ボタンでGO
+    button.addEventListener('click', go);
+
+    // EnterでもGO
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') go();
     });
   </script>
 </body>
